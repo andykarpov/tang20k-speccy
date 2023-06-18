@@ -1,0 +1,44 @@
+<?xml version="1" encoding="UTF-8"?>
+<!DOCTYPE gowin-fpga-project>
+<Project>
+    <Template>FPGA</Template>
+    <Version>5</Version>
+    <Device name="GW2AR-18C" pn="GW2AR-LV18QN88C8/I7">gw2ar18c-000</Device>
+    <FileList>
+        <File path="src/hdmi/svo_defines.vh" type="file.verilog" enable="1"/>
+        <File path="src/hdmi/svo_enc.v" type="file.verilog" enable="1"/>
+        <File path="src/hdmi/svo_hdmi_out.v" type="file.verilog" enable="1"/>
+        <File path="src/hdmi/svo_tcard.v" type="file.verilog" enable="1"/>
+        <File path="src/hdmi/svo_tmds.v" type="file.verilog" enable="1"/>
+        <File path="src/sdram/sdram.v" type="file.verilog" enable="1"/>
+        <File path="src/ukp/ukp.v" type="file.verilog" enable="1"/>
+        <File path="src/ukp/ukprom.v" type="file.verilog" enable="1"/>
+        <File path="src/dac/dac.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/divmmc/divmmc.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/flash/flash.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/gowin_clkdiv/gowin_clkdiv.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/gowin_dpb/gowin_dpb.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/gowin_prom/gowin_prom.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/gowin_rpll/gowin_rpll.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/gowin_rpll/gowin_rpll2.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/loader/loader.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/rtc/mc146818a.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/sdram/ram.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/soundrive/soundrive.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/speccy_top.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/spi/spi.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/spi/spi_master.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/ssg/ay8910.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/t80se/T80.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/t80se/T80_ALU.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/t80se/T80_MCode.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/t80se/T80_Reg.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/t80se/T80a.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/turbosound/turbosound.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/ukp/keyboard.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/video/video.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/zc/zcontroller.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/tang20k_speccy.cst" type="file.cst" enable="1"/>
+        <File path="src/tang20k_speccy.sdc" type="file.sdc" enable="1"/>
+    </FileList>
+</Project>
