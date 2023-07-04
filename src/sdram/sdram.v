@@ -1,6 +1,8 @@
 // Simple SDRAM controller for Tang 20k
 // nand2mario
-// 
+// mod by andykarpov 
+//
+// 2023.7: added 140MHz parameters based on the M12L64322A SDRAM IC
 // 2023.3: ported to use GW2AR-18's embedded 64Mbit SDRAM.
 //         changed to byte-based access.
 // 2022.9: iniital version.
@@ -8,10 +10,6 @@
 // This is a byte-based, low-latency and non-bursting controller for the embedded SDRAM
 // on Tang Nano 20K. The SDRAM module is 64Mbit 32bit. (2K rows x 256 columns x 4 banks x 32 bits).
 //
-// Under default settings (max 66.7Mhz):
-// - Data read latency is 4 cycles. 
-// - Read/write operations take 5 cycles to complete. There's no overlap between
-//   reads/writes.
 // - All reads/writes are done with auto-precharge. So user does not need to deal with
 //   row activations and precharges.
 // - SDRAMs need periodic refreshes or they lose data. So they provide an "auto-refresh"
@@ -26,21 +24,20 @@
 
 module sdram
 #(
-    // Clock frequency, max 66.7Mhz with current set of T_xx/CAS parameters.
-    parameter         FREQ = 66_700_000,  
+    parameter         FREQ = 140_000_000, // Clock freq
     parameter         DATA_WIDTH = 32,
     parameter         ROW_WIDTH = 11,  // 2K rows
     parameter         COL_WIDTH = 8,   // 256 words per row (1Kbytes)
     parameter         BANK_WIDTH = 2,  // 4 banks
 
-    // Time delays for 66.7Mhz max clock (min clock cycle 15ns)
+    // Time delays for 143Mhz max clock
     // The SDRAM supports max 166.7Mhz (RP/RCD/RC need changes)
-    parameter [3:0]   CAS  = 4'd2,     // 2/3 cycles, set in mode register
+    parameter [3:0]   CAS  = 4'd3,     // 2/3 cycles, set in mode register
     parameter [3:0]   T_WR = 4'd2,     // 2 cycles, write recovery
     parameter [3:0]   T_MRD= 4'd2,     // 2 cycles, mode register set
-    parameter [3:0]   T_RP = 4'd1,     // 15ns, precharge to active
-    parameter [3:0]   T_RCD= 4'd1,     // 15ns, active to r/w
-    parameter [3:0]   T_RC = 4'd4      // 60ns, ref/active to ref/active
+    parameter [3:0]   T_RP = 4'd3,     // 15ns, precharge to active
+    parameter [3:0]   T_RCD= 4'd2,     // 15ns, active to r/w
+    parameter [3:0]   T_RC = 4'd9      // 60ns, ref/active to ref/active
 )
 (
     // SDRAM side interface

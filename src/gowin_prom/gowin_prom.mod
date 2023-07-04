@@ -11,8 +11,8 @@
 -type RAM_ROM
 -file_type vhdl
 -pROM true
--depth 16384
+-depth 65536
 -width 8
 -read_mode bypass
 -reset_mode sync
--init_file /home/andy/Documents/Projects/Retrocomp/FPGA/Tang20k/tang20k-speccy/rom/src/diagrom.mi
+-init_file /home/andy/Documents/Projects/Retrocomp/FPGA/Tang20k/tang20k-speccy/rom/rom-divmmc.mi

@@ -7,9 +7,9 @@ type=ram_prom
 version=1.0
 
 [Config]
-DEPTH=16384
+DEPTH=65536
 LANG=1
-MEM_FILE=../../rom/src/diagrom.mi
+MEM_FILE=../../rom/rom-divmmc.mi
 READ=0
 RESET_MODE=true
 WIDTH=8

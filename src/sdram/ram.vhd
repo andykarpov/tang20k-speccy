@@ -9,8 +9,8 @@ use IEEE.std_logic_unsigned.all;
 
 entity ram is
 	port(
-        CLK             : in std_logic; -- 56
-		CLK_MEM			: in std_logic; -- 56 deg 180
+        CLK             : in std_logic; -- 140
+		CLK_MEM			: in std_logic; -- 140 deg 180
 		CLK_BUS 		: in std_logic; -- 28
         RESET           : in std_logic;
 
@@ -58,9 +58,9 @@ architecture rtl of ram is
     type qmachine is (init, idle, read, write, refresh);
     signal state : qmachine := init;
 
-    signal rd_req : std_logic_vector(1 downto 0) := "00";
-    signal wr_req : std_logic_vector(1 downto 0) := "00";
-	signal rfsh_req : std_logic_vector(1 downto 0) := "00";
+    signal rd_req : std_logic := '0';
+    signal wr_req : std_logic := '0';
+	signal rfsh_req : std_logic := '0';
 
     signal int_busy : std_logic := '0';
 	signal rd_ready : std_logic := '0';
@@ -97,26 +97,16 @@ U_SDRAM: entity work.sdram
 		busy => sdr_busy
 	);
 
+rd_req <= '0' when loader_act = '1' else RD;
+wr_req <= loader_ram_wr when loader_act = '1' else WR;
+rfsh_req <= '0' when loader_act = '1' else RFSH;
+
 process (CLK, RESET, loader_act, loader_ram_wr) 
 begin 
     if RESET = '1' then 
         int_busy <= '1';
 		rd_ready <= '0';
     elsif rising_edge(CLK) then 
-
-		if (loader_act = '1') then 
-            rd_req(0) <= '0';
-            wr_req(0) <= loader_ram_wr;
-			rfsh_req(0) <= '0';
-        else 
-            rd_req(0) <= RD;
-            wr_req(0) <= WR;
-			rfsh_req(0) <= RFSH;
-        end if;
-
-        rd_req(1) <= rd_req(0);
-        wr_req(1) <= wr_req(0);
-		rfsh_req(1) <= rfsh_req(0);
 
         case state is
 
@@ -127,7 +117,7 @@ begin
 
             when idle =>
                 int_busy <= '0';
-                if (wr_req(0) = '1') then
+                if (wr_req = '1') then
 					int_busy <= '1';
                     state <= write;
 					sdr_wr <= '1';
@@ -139,13 +129,13 @@ begin
                         sdr_din <= DI;
                     end if;
 					sdr_wr <= '1';
-                elsif (rd_req(0) = '1') then
+                elsif (rd_req = '1') then
 					rd_ready <= '0';
 					int_busy <= '1';
                     state <= read;
                     sdr_addr <= "00" & A;
                     sdr_rd <= '1';
-				elsif (rfsh_req(0) = '1') then 
+				elsif (rfsh_req = '1') then 
 					int_busy <= '1';
 					state <= refresh;
 					sdr_addr <= "00" & A;
@@ -155,7 +145,8 @@ begin
             when read => 
                 sdr_rd <= '0';
                 if (sdr_data_ready = '1') then 
-					buf <= sdr_dout(7 downto 0);
+					--buf <= sdr_dout(7 downto 0);
+					DO <= sdr_dout(7 downto 0);
 					rd_ready <= '1';
 					state <= idle;
                 end if;
@@ -175,14 +166,14 @@ begin
     end if;
 end process;
 
-process (CLK_BUS, int_busy)
-begin 
-    if rising_edge(CLK_BUS) then 
-        BUSY <= int_busy;
-        if rd_ready = '1' then 
-            DO <= buf;
-        end if;
-    end if;
-end process;
+--process (CLK_BUS, int_busy)
+--begin 
+--    if rising_edge(CLK_BUS) then 
+--        BUSY <= int_busy;
+--        if rd_ready = '1' then 
+--            DO <= buf;
+--        end if;
+--    end if;
+--end process;
 
 end rtl;

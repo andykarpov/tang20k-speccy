@@ -76,7 +76,7 @@
  "Update_Compile_Point_Timing_Data" : false,
  "Use_Clock_Period_for_Unconstrainted IO" : false,
  "VCCAUX" : 3.3,
- "VHDL_Standard" : "VHDL_Std_2008",
+ "VHDL_Standard" : "VHDL_Std_1993",
  "Verilog_Standard" : "Vlg_Std_2001",
  "WAKE_UP" : "0",
  "Write_Vendor_Constraint_File" : true,

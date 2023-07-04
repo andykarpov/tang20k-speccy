@@ -5,7 +5,7 @@
 --Part Number: GW2AR-LV18QN88C8/I7
 --Device: GW2AR-18
 --Device Version: C
---Created Time: Sat Jun 17 00:53:12 2023
+--Created Time: Mon Jun 19 23:35:58 2023
 
 --Change the instance name and port connections to the signal names
 ----------Copy here to design--------
@@ -17,7 +17,7 @@ component Gowin_pROM
         oce: in std_logic;
         ce: in std_logic;
         reset: in std_logic;
-        ad: in std_logic_vector(13 downto 0)
+        ad: in std_logic_vector(15 downto 0)
     );
 end component;
 

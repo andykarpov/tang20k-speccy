@@ -37,10 +37,33 @@ port (
     SD_SCK: out std_logic;
     SD_CMD : out std_logic;
     SD_DAT0: in std_logic;
+	SD_DAT1: inout std_logic;
+	SD_DAT2: inout std_logic;
 
     -- UART
     UART_TXD : out std_logic;
     UART_RXD : in std_logic;
+
+	-- I2S
+	I2S_DIN: out std_logic;
+	I2S_LRCK: out std_logic;
+	I2S_BCLK: out std_logic;
+	I2S_EN: out std_logic;
+
+	-- RGB LED
+	WS2812: out std_logic;
+
+	-- EXT PLL
+	CLK1 : in std_logic;
+	CLK2 : in std_logic;
+	CLK3 : in std_logic;
+
+	-- LCD backlight
+	LCD_BL : out std_logic;
+
+	-- EDID
+	I2C_CLK : inout std_logic;
+	I2C_DAT : inout std_logic;
 
     -- USB keyboard
     usb_dn : inout std_logic;
@@ -81,12 +104,14 @@ signal cpu0_mem_rd	: std_logic;
 signal cpu0_nmi_n	: std_logic;
 
 -- Memory
+signal rom_a_bus 	: std_logic_vector(15 downto 0);
 signal rom_do_bus	: std_logic_vector(7 downto 0);
 signal ram_a_bus	: std_logic_vector(7 downto 0);
-signal rom_bank     : std_logic_vector(1 downto 0) := "10";
-signal prev_rom_bank : std_logic_vector(1 downto 0) := "10";
+signal rom_bank     : std_logic_vector(1 downto 0) := "00";
+signal prev_rom_bank : std_logic_vector(1 downto 0) := "00";
 signal rom_bank_reset : std_logic := '0';
 signal rom_bank_reset_cnt  	: std_logic_vector(3 downto 0) := "0000";
+signal is_rom : std_logic := '0';
 
 -- Ports
 signal port_xxfe_reg	: std_logic_vector(7 downto 0) := "00000000";
@@ -171,13 +196,17 @@ signal covox_c		: std_logic_vector(7 downto 0);
 signal covox_d		: std_logic_vector(7 downto 0);
 
 -- CLOCK
-signal clk_bus		: std_logic;
+signal clk_280 		: std_logic;
+signal clk_280_p 	: std_logic;
+signal clk_bus		: std_logic := '0';
+signal clk_bus_cnt  : std_logic_vector(2 downto 0) := "000";
 signal clk_tmds		: std_logic;
 signal clk_tmds_p   : std_logic;
 signal clk_sdram    : std_logic;
 signal clk_sdram_p  : std_logic;
 signal clk_vga		: std_logic;
-signal clk_usb      : std_logic;
+signal clk_usb      : std_logic := '0';
+signal clk_usb_cnt  : std_logic_vector(3 downto 0) := "0000";
 signal ena_14mhz	: std_logic;
 signal ena_7mhz		: std_logic;
 signal ena_3_5mhz	: std_logic;
@@ -204,6 +233,7 @@ signal divmmc_eeprom_we_n : std_logic;
 signal divmmc_sram_oe_n : std_logic;
 signal divmmc_sram_we_n : std_logic;
 signal divmmc_sram_hiaddr : std_logic_vector(5 downto 0);
+signal divmmc_mapcond : std_logic;
 
 signal divmmc_cs_n	: std_logic_vector(1 downto 0);
 signal divmmc_sclk	: std_logic;
@@ -219,7 +249,7 @@ signal zc_rd		: std_logic;
 signal zc_wr		: std_logic;
 
 -- Loader
-signal loader_act		: std_logic := '1';
+signal loader_act		: std_logic := '0';
 signal loader_reset 	: std_logic := '0';
 signal loader_done 	: std_logic := '0';
 signal loader_ram_di	: std_logic_vector(7 downto 0);
@@ -255,32 +285,54 @@ begin
 U1: entity work.gowin_rpll
 port map (
     clkin => clk27M,
-    clkout => clk_tmds, -- 140
-    clkoutp => clk_tmds_p, -- 140 90deg phase shifted
-	clkoutd => clk_usb, -- 12
+    clkout => clk_280,
+    clkoutp => clk_280_p, --  180deg phase shifted
     lock => locked
 );
 
-U2: entity work.gowin_clkdiv
-port map (
-    hclkin => clk_tmds, -- 140
-    clkout => clk_vga,  -- 28
-    resetn => not areset
-);
+process (clk_280) 
+begin 
+	if rising_edge(clk_280) then 
+		clk_tmds <= not clk_tmds;
+	end if;
+end process;
 
-U3: entity work.gowin_rpll2
-port map (
-    clkin => clk27M, -- 27
-    clkout => clk_sdram, -- 56
-    clkoutp => clk_sdram_p, -- 56 180 deg shifted
-    lock => locked2
-);
+process (clk_280_p) 
+begin 
+	if rising_edge(clk_280_p) then 
+		clk_tmds_p <= not clk_tmds_p;
+	end if;
+end process;
+
+process (clk_280)
+begin 
+	if rising_edge(clk_280) then 
+		if clk_bus_cnt = x"4" then 
+			clk_bus_cnt <= (others => '0');
+			clk_vga <= not clk_vga;
+		else 
+			clk_bus_cnt <= clk_bus_cnt + 1;
+		end if;
+	end if;
+end process;
 
 clk_bus <= clk_vga;
 
+process (clk_280)
+begin 
+	if rising_edge(clk_280) then 
+		if clk_usb_cnt = x"a" then 
+			clk_usb_cnt <= (others => '0');
+			clk_usb <= not clk_usb;
+		else 
+			clk_usb_cnt <= clk_usb_cnt + 1;
+		end if;
+	end if;
+end process;
+
 U4: entity work.svo_hdmi_out
 port map (
-    resetn => not reset,
+    resetn => not areset,
     clk_pixel => clk_bus,
     clk_5x_pixel => clk_tmds,
     locked => locked,
@@ -370,8 +422,8 @@ U8: entity work.Gowin_pROM
         clk => clk_bus,
         oce => '1',
         ce => '1',
-        reset => reset,
-        ad => cpu0_a_bus(13 downto 0)
+        reset => areset,
+        ad => rom_a_bus
     );
 
 -- TurboSound
@@ -398,8 +450,8 @@ port map (
 -- RAM Controller
 U10: entity work.ram
 port map (
-    CLK     => clk_sdram,
-    CLK_MEM	=> clk_sdram_p, 
+    CLK     => clk_tmds,
+    CLK_MEM	=> clk_tmds_p,
     CLK_BUS => clk_bus,
     RESET   => areset,
 
@@ -472,7 +524,7 @@ port map (
     rd      => cpu0_rd_n,
     m1      => cpu0_m1_n,
     reset   => not reset,
-    clock   => clk_bus,
+    clock   => not cpuclk,
     
     romcs   => divmmc_disable_zxrom,
     romoe   => divmmc_eeprom_oe_n,
@@ -488,51 +540,51 @@ port map (
     
     poweron => not areset,
     eprom => '0',
-    mapcondout => LED(4)
+    mapcondout => divmmc_mapcond
 );
 
 -- SPI flash parallel interface
-U14: entity work.flash
-port map(
-	CLK 	    => clk_bus,
-	RESET 	    => areset,
-	
-	A 		    => flash_a_bus,
-	DI 		    => flash_di_bus,
-	DO 		    => flash_do_bus,
-	WR_N 	    => flash_wr_n,
-	RD_N 	    => flash_rd_n,
-	ER_N 	    => flash_er_n,
+--U14: entity work.flash
+--port map(
+--	CLK 	    => clk_bus,
+--	RESET 	    => areset,
+--	
+--	A 		    => flash_a_bus,
+--	DI 		    => flash_di_bus,
+--	DO 		    => flash_do_bus,
+--	WR_N 	    => flash_wr_n,
+--	RD_N 	    => flash_rd_n,
+--	ER_N 	    => flash_er_n,
 
-	DATA0	    => flash_di,
-	NCSO	    => flash_ncs,
-	DCLK	    => flash_clk,
-	ASDO	    => flash_do,
+--	DATA0	    => flash_di,
+--	NCSO	    => flash_ncs,
+--	DCLK	    => flash_clk,
+--	ASDO	    => flash_do,
 
-	BUSY 	    => flash_busy,
-	DATA_READY  => flash_rdy
-);
+--	BUSY 	    => flash_busy,
+--	DATA_READY  => flash_rdy
+--);
 
 -- Loader
-U15: entity work.loader
-port map(
-	CLK 			=> clk_bus,
-	RESET 			=> areset,
-	
-	RAM_A 			=> loader_ram_a,
-	RAM_DO 			=> loader_ram_do,
-	RAM_WR 			=> loader_ram_wr,
-    RAM_WAIT        => sdram_wait,
-	
-	FLASH_A 		=> loader_flash_a,
-	FLASH_DO 		=> flash_do_bus,
-	FLASH_RD_N 		=> loader_flash_rd_n,
-	FLASH_BUSY 		=> flash_busy,
-	FLASH_READY 	=> flash_rdy,
-	
-	LOADER_ACTIVE 	=> loader_act,
-	LOADER_RESET 	=> loader_reset
-);
+--U15: entity work.loader
+--port map(
+--	CLK 			=> clk_bus,
+--	RESET 			=> areset,
+--	
+--	RAM_A 			=> loader_ram_a,
+--	RAM_DO 			=> loader_ram_do,
+--	RAM_WR 			=> loader_ram_wr,
+--    RAM_WAIT        => sdram_wait,
+--	
+--	FLASH_A 		=> loader_flash_a,
+--	FLASH_DO 		=> flash_do_bus,
+--	FLASH_RD_N 		=> loader_flash_rd_n,
+--	FLASH_BUSY 		=> flash_busy,
+--	FLASH_READY 	=> flash_rdy,
+--	
+--	LOADER_ACTIVE 	=> loader_act,
+--	LOADER_RESET 	=> loader_reset
+--);
 
 -- Delta-Sigma
 U16: entity work.dac
@@ -719,23 +771,31 @@ begin
         case mux(2 downto 1) is
             when "00" => 
                 if divmmc_on = '1' and divmmc_disable_zxrom = '1' and divmmc_eeprom_oe_n = '0' then -- ESXDOS ROM
+					is_rom <= '1';
                     ram_a_bus <= "10000000";
+					rom_a_bus <= "000" & cpu0_a_bus(12 downto 0);
                 elsif divmmc_on = '1' and divmmc_disable_zxrom = '1' then -- ESXDOS RAM
+					is_rom <= '0';
                     ram_a_bus <= "11" & divmmc_sram_hiaddr(5 downto 0);
                 else
+					is_rom <= '1';
+					rom_a_bus <= "1" & port_7ffd_reg(4) & cpu0_a_bus(13 downto 0);
                     ram_a_bus <= "100001" & port_7ffd_reg(4) & cpu0_a_bus(13); -- ROM
                 end if;
-            when "01" => ram_a_bus <= "0000101" & cpu0_a_bus(13);	-- Seg1 RAM 4000-7FFF
-            when "10" => ram_a_bus <= "0000010" & cpu0_a_bus(13);	-- Seg2 RAM 8000-BFFF
-            when "11" => ram_a_bus <= "0000" & port_7ffd_reg(2 downto 0) & cpu0_a_bus(13);	-- Seg3 RAM C000-FFFF
+            when "01" => ram_a_bus <= "0000101" & cpu0_a_bus(13); is_rom <= '0';	-- Seg1 RAM 4000-7FFF
+            when "10" => ram_a_bus <= "0000010" & cpu0_a_bus(13); is_rom <= '0';	-- Seg2 RAM 8000-BFFF
+            when "11" => ram_a_bus <= "0000" & port_7ffd_reg(2 downto 0) & cpu0_a_bus(13); is_rom <= '0';	-- Seg3 RAM C000-FFFF
             when others => null;
         end case;
     else
         case mux(2 downto 1) is
-            when "00" => ram_a_bus <= "100" & rom_bank & not dos_act & port_7ffd_reg(4) & cpu0_a_bus(13); -- ROM
-            when "01" => ram_a_bus <= "0000101" & cpu0_a_bus(13);	-- Seg1 RAM 4000-7FFF
-            when "10" => ram_a_bus <= "0000010" & cpu0_a_bus(13);	-- Seg2 RAM 8000-BFFF
-            when "11" => ram_a_bus <= "0" & port_dffd_reg(2 downto 0) & port_7ffd_reg(2 downto 0) & cpu0_a_bus(13);	-- Seg3 RAM C000-FFFF
+            when "00" => 
+				ram_a_bus <= "100" & rom_bank & not dos_act & port_7ffd_reg(4) & cpu0_a_bus(13); -- ROM
+				rom_a_bus <=  not dos_act & port_7ffd_reg(4) & cpu0_a_bus(13 downto 0);
+				is_rom <= '1';
+            when "01" => ram_a_bus <= "0000101" & cpu0_a_bus(13); is_rom <= '0';	-- Seg1 RAM 4000-7FFF
+            when "10" => ram_a_bus <= "0000010" & cpu0_a_bus(13); is_rom <= '0';	-- Seg2 RAM 8000-BFFF
+            when "11" => ram_a_bus <= "0" & port_dffd_reg(2 downto 0) & port_7ffd_reg(2 downto 0) & cpu0_a_bus(13); is_rom <= '0';	-- Seg3 RAM C000-FFFF
             when others => null;
         end case;        
     end if;
@@ -795,7 +855,7 @@ begin
 end process;
 
 selector <= 
-            x"00" when (cpu0_mreq_n = '0' and cpu0_rd_n = '0' and cpu0_a_bus(15 downto 14) = "00") else -- ROM
+            x"00" when (cpu0_mreq_n = '0' and cpu0_rd_n = '0' and cpu0_a_bus(15 downto 14) = "00") and is_rom = '1' else -- ROM
 			x"01" when (cpu0_mreq_n = '0' and cpu0_rd_n = '0') else 													        -- SDRAM
 --			x"02" when (cpu0_iorq_n = '0' and cpu0_rd_n = '0' and port_bff7 = '1' and port_eff7_reg(7) = '1') else 		        -- MC146818A
 			x"03" when (cpu0_iorq_n = '0' and cpu0_rd_n = '0' and cpu0_a_bus( 7 downto 0) = X"FE") else 				        -- xxFE
@@ -826,20 +886,21 @@ tmds_b <= vid_rgb(1 downto 0) & vid_rgb(1 downto 0) & vid_rgb(1 downto 0) & vid_
 -------------------------------------------------------------------------------
 -- Loader flash / host ctl
 
-flash_a_bus <= loader_flash_a when loader_act = '1' else host_flash_a_bus;
-flash_di_bus <= "00000000" when loader_act = '1' else host_flash_di_bus;
-flash_wr_n <= '1' when loader_act = '1' else host_flash_wr_n;
-flash_rd_n <= loader_flash_rd_n when loader_act = '1' else host_flash_rd_n;
-flash_er_n <= '1' when loader_act = '1' else host_flash_er_n;
+--flash_a_bus <= loader_flash_a when loader_act = '1' else host_flash_a_bus;
+--flash_di_bus <= "00000000" when loader_act = '1' else host_flash_di_bus;
+--flash_wr_n <= '1' when loader_act = '1' else host_flash_wr_n;
+--flash_rd_n <= loader_flash_rd_n when loader_act = '1' else host_flash_rd_n;
+--flash_er_n <= '1' when loader_act = '1' else host_flash_er_n;
 
 -------------------------------------------------------------------------------
 -- Misc
 
-UART_TXD <= '0';
-LED(0) <= not loader_act;
-LED(1) <= not loader_done;
+--UART_TXD <= '0';
+LED(0) <= divmmc_cs_n(0); --not loader_act;
+LED(1) <= not divmmc_on; -- not loader_done;
 LED(2) <= not reset;
 LED(3) <= not sdram_wait;
+LED(4) <= not divmmc_mapcond;
 LED(5) <= not divmmc_disable_zxrom;
 
 ---- debug INT position: F5-F6 h int pos, F7-F8 - v int pos

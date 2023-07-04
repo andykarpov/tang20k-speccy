@@ -126,6 +126,9 @@ begin
 --			if key0(6) = '1' then keys(11)(3) <= '1'; end if;	-- E6 Right Alt
 --  		if key0(7) = '1' then keys(11)(3) <= '1'; end if;	-- E7 Right Gui
 
+			-- DEBUG
+			--keys(7)(0) <= '0'; -- SPACE
+
             -- key1 - key6
             for II in 0 to 5 loop
                 case data((II+1)*8-1 downto II*8) is

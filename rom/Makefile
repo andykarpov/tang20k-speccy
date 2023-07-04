@@ -19,7 +19,7 @@ SRC_DIVMMC=src/esxdos.rom src/128-0.rom src/128-1.rom
 SRC_ZC=src/gluk.rom src/trdos.rom src/128p-0.rom src/128p-1.rom
 SRC_DIAG=src/diagrom.rom
 SRC_RAGEFIX=src/ragefix.rom
-IMAGES=rom-divmmc.rom rom-zc.rom rom-diag.rom rom-ragefix.rom rom-tang9k-speccy.rom
+IMAGES=rom-divmmc.rom rom-zc.rom rom-diag.rom rom-ragefix.rom rom-tang20k-speccy.rom
 
 all: $(IMAGES)
 
@@ -46,11 +46,11 @@ rom-diag.rom: $(SRC_DIAG)
 rom-ragefix.rom: $(SRC_RAGEFIX)
 	cat src/ragefix.rom > rom-ragefix.rom
 
-rom-tang9k-speccy.rom: rom-divmmc.rom rom-zc.rom rom-diag.rom rom-ragefix.rom
-	cat rom-divmmc.rom > rom-tang9k-speccy.rom
-	cat rom-zc.rom >> rom-tang9k-speccy.rom
-	cat rom-diag.rom >> rom-tang9k-speccy.rom
-	cat rom-ragefix.rom >> rom-tang9k-speccy.rom
+rom-tang20k-speccy.rom: rom-divmmc.rom rom-zc.rom rom-diag.rom rom-ragefix.rom
+	cat rom-divmmc.rom > rom-tang20k-speccy.rom
+	cat rom-zc.rom >> rom-tang20k-speccy.rom
+	cat rom-diag.rom >> rom-tang20k-speccy.rom
+	cat rom-ragefix.rom >> rom-tang20k-speccy.rom
 
 clean:
 	rm -f $(IMAGES)
